@@ -45,8 +45,9 @@
 
 ;; Directory where tempfiles are saved
 ;; Make sure to include trailing slash!!!
-(setq tmp-file-dir "./textareas-tmp/")
+(setq tmp-file-dir "~/.emacs.d/textareas-tmp/")
 (setq tmp-filename (make-temp-name "textarea-"))
+(make-directory tmp-file-dir 1)
 
 (defcustom edit-server-port 9292
   "Local port the edit server listens to."
@@ -368,10 +369,13 @@ and its buffer are killed with `edit-server-kill-client'."
                            (current-time)))))
         (process-send-string proc response-header)
         (process-send-string proc "\n")
+
         (cond
          ((stringp body) (process-send-string proc body))
          ((not body) nil)
-         (t (process-send-region proc (point-min) (point-max))))
+         (t (pgg-sign t)
+            (with-current-buffer pgg-output-buffer
+              (process-send-region proc (point-min) (point-max)))))
         (process-send-eof proc)
         (if close 
             (edit-server-kill-client proc))
