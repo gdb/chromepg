@@ -328,6 +328,20 @@ If `edit-server-verbose' is non-nil, then STRING is also echoed to the message l
     (pop-to-buffer buffer)
     nil))
 
+;; Cargo-culted from pgg-decode-armor-region
+(defun edit-server-decode-armor-region (start end)
+  (save-restriction
+    (narrow-to-region start end)
+    (goto-char (point-min))
+    (re-search-forward "^-+BEGIN PGP" nil t)
+    (delete-region (point-min)
+		   (and (search-forward "\n\n")
+			(match-end 0)))
+    (goto-char (point-max))
+    (re-search-backward "^-+BEGIN PGP" nil t)
+    (delete-region (match-beginning 0)
+                   (point-max))))
+
 (defun edit-server-create-edit-buffer(proc)
   "Create an edit buffer, place content in it and save the network
   process for the final call back"
@@ -339,6 +353,9 @@ If `edit-server-verbose' is non-nil, then STRING is also echoed to the message l
            (set-buffer-multibyte t))) ; djb
     (copy-to-buffer buffer (point-min) (point-max))
     (with-current-buffer buffer
+      (condition-case nil
+          (edit-server-decode-armor-region (point-min) (point-max))
+        (error nil))
       (not-modified)
       (edit-server-text-mode)
       (add-hook 'kill-buffer-hook 'edit-server-abort* nil t)
